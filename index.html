@@ -1,0 +1,627 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Gerador de QR Code Dinâmico</title>
+<script src="https://cdn.jsdelivr.net/npm/qrcodejs@1.0.0/qrcode.min.js"></script>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    min-height: 100vh; padding: 20px; color: #333;
+  }
+  .container {
+    max-width: 900px; margin: 0 auto; background: #fff;
+    border-radius: 16px; padding: 30px;
+    box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+  }
+  h1 { text-align: center; margin-bottom: 24px; color: #4a3f8a; font-size: 1.8rem; }
+
+  /* Login */
+  .login-box {
+    text-align: center; padding: 30px;
+    background: #f9f9fc; border-radius: 12px; margin-bottom: 20px;
+  }
+  .login-box p { margin-bottom: 16px; color: #666; }
+  .user-bar {
+    display: flex; align-items: center; gap: 12px;
+    padding: 12px 16px; background: #e8f5e9;
+    border-radius: 10px; margin-bottom: 20px;
+    border-left: 4px solid #4caf50;
+  }
+  .user-bar img { width: 36px; height: 36px; border-radius: 50%; }
+  .user-bar .info { flex: 1; }
+  .user-bar .name { font-weight: 700; color: #2e7d32; }
+  .user-bar .sub { font-size: 0.8rem; color: #666; }
+
+  .device-code {
+    font-family: monospace; font-size: 2rem; font-weight: 700;
+    letter-spacing: 4px; color: #4a3f8a;
+    background: #fff; padding: 16px;
+    border-radius: 10px; margin: 16px 0;
+    border: 2px dashed #667eea;
+  }
+  .btn-github {
+    background: #24292e; color: #fff;
+    display: inline-flex; align-items: center; gap: 8px;
+    padding: 12px 24px;
+  }
+  .btn-github:hover { background: #000; }
+
+  .config {
+    background: #fff8e1; border: 2px solid #ffc107;
+    border-radius: 10px; padding: 16px; margin-bottom: 20px;
+    font-size: 0.9rem;
+  }
+  .config h3 { color: #b45309; margin-bottom: 8px; font-size: 1rem; }
+  .config input {
+    width: 100%; padding: 8px; border: 1px solid #ddd;
+    border-radius: 6px; margin-top: 4px; font-size: 0.85rem;
+  }
+  .config-row { margin-bottom: 10px; }
+
+  .form-group { margin-bottom: 16px; }
+  label { display: block; margin-bottom: 6px; font-weight: 600; font-size: 0.9rem; color: #555; }
+  input {
+    width: 100%; padding: 12px; border: 2px solid #e0e0e0;
+    border-radius: 8px; font-size: 1rem; transition: border 0.2s; font-family: inherit;
+  }
+  input:focus { outline: none; border-color: #667eea; }
+
+  .btn {
+    padding: 12px 20px; border: none; border-radius: 8px;
+    font-size: 1rem; font-weight: 600; cursor: pointer;
+    transition: all 0.2s; font-family: inherit;
+  }
+  .btn-primary { background: #667eea; color: #fff; width: 100%; }
+  .btn-primary:hover { background: #5568d3; }
+  .btn-primary:disabled { background: #aaa; cursor: not-allowed; }
+  .btn-secondary { background: #f0f0f5; color: #444; }
+  .btn-secondary:hover { background: #e0e0ea; }
+  .btn-danger { background: #ff4757; color: #fff; padding: 6px 12px; font-size: 0.85rem; }
+  .btn-small { padding: 6px 12px; font-size: 0.85rem; }
+
+  .qr-preview {
+    display: flex; flex-direction: column; align-items: center;
+    gap: 12px; padding: 20px; background: #f9f9fc;
+    border-radius: 12px; margin-top: 20px;
+  }
+  #qrcode {
+    background: #fff; padding: 16px; border-radius: 8px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+  }
+  .toolbar {
+    display: flex; gap: 8px; flex-wrap: wrap;
+    margin-top: 20px; padding-top: 20px; border-top: 2px solid #f0f0f5;
+  }
+  .search-box { display: flex; gap: 8px; margin-bottom: 16px; }
+  .search-box input { flex: 1; }
+  .list {
+    display: grid; gap: 10px; max-height: 400px;
+    overflow-y: auto; padding-right: 4px;
+  }
+  .card {
+    display: flex; align-items: center; gap: 12px; padding: 12px;
+    background: #f9f9fc; border-radius: 10px;
+    border-left: 4px solid #667eea; transition: transform 0.15s;
+  }
+  .card:hover { transform: translateX(4px); }
+  .card-info { flex: 1; min-width: 0; }
+  .card-title { font-weight: 700; color: #333; margin-bottom: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .card-url { font-size: 0.85rem; color: #888; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .card-id {
+    font-family: monospace; font-size: 0.75rem;
+    background: #e0e7ff; color: #4a3f8a;
+    padding: 2px 8px; border-radius: 10px;
+    display: inline-block; margin-top: 4px;
+  }
+  .card-actions { display: flex; gap: 6px; }
+  .empty { text-align: center; padding: 30px; color: #999; font-style: italic; }
+  .hidden { display: none !important; }
+  h2 { font-size: 1.2rem; color: #4a3f8a; margin: 24px 0 12px; }
+  .toast {
+    position: fixed; bottom: 24px; left: 50%;
+    transform: translateX(-50%) translateY(100px);
+    background: #333; color: #fff; padding: 12px 24px;
+    border-radius: 8px; opacity: 0; transition: all 0.3s; z-index: 999;
+  }
+  .toast.show { transform: translateX(-50%) translateY(0); opacity: 1; }
+  .login-loading { color: #667eea; font-style: italic; }
+</style>
+</head>
+<body>
+<div class="container">
+  <h1>🔗 Gerador de QR Code Dinâmico</h1>
+
+  <!-- Área de login -->
+  <div id="loginArea" class="login-box">
+    <p>Entre com sua conta do GitHub para gerenciar seus QRs.</p>
+    <button class="btn btn-github" id="loginBtn">
+      <svg width="20" height="20" viewBox="0 0 16 16" fill="currentColor">
+        <path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z"/>
+      </svg>
+      Entrar com GitHub
+    </button>
+    <div id="deviceFlow" class="hidden" style="margin-top:20px;">
+      <p>1. Copie o código:</p>
+      <div class="device-code" id="deviceCode">--------</div>
+      <button class="btn btn-secondary btn-small" id="copyCodeBtn">📋 Copiar código</button>
+      <p style="margin-top:16px;">2. Clique abaixo e cole o código:</p>
+      <a href="https://github.com/login/device" target="_blank" class="btn btn-primary" style="display:inline-block; text-decoration:none; width:auto; margin-top:8px;">
+        🔗 Abrir github.com/login/device
+      </a>
+      <p class="login-loading" style="margin-top:16px;">⏳ Aguardando autorização...</p>
+    </div>
+  </div>
+
+  <!-- Barra de usuário logado -->
+  <div id="userBar" class="user-bar hidden">
+    <img id="userAvatar" src="" alt="">
+    <div class="info">
+      <div class="name" id="userName"></div>
+      <div class="sub">Conectado via GitHub</div>
+    </div>
+    <button class="btn btn-secondary btn-small" id="logoutBtn">Sair</button>
+  </div>
+
+  <!-- App (só aparece logado) -->
+  <div id="app" class="hidden">
+
+    <div class="config">
+      <h3>⚙️ Configuração</h3>
+      <div class="config-row">
+        <label>Gist ID</label>
+        <input type="text" id="cfgGist" placeholder="ex: a1b2c3d4e5f6...">
+      </div>
+      <div class="config-row">
+        <label>URL base do redirecionador</label>
+        <input type="text" id="cfgBase" placeholder="https://seu-user.github.io/qr-redirect/redirect.html">
+      </div>
+      <button class="btn btn-secondary btn-small" id="saveCfgBtn">💾 Salvar configuração</button>
+      <button class="btn btn-secondary btn-small" id="syncBtn">🔄 Sincronizar</button>
+    </div>
+
+    <div class="form-group">
+      <label for="title">Título (fácil de buscar)</label>
+      <input type="text" id="title" placeholder="Ex: Site da empresa">
+    </div>
+    <div class="form-group">
+      <label for="url">Link de destino (pode mudar depois!)</label>
+      <input type="url" id="url" placeholder="https://exemplo.com">
+    </div>
+    <button class="btn btn-primary" id="saveBtn">💾 Salvar no Gist e Gerar QR Code</button>
+
+    <div class="qr-preview hidden" id="preview">
+      <div id="qrcode"></div>
+      <p id="previewLabel" style="font-weight:600; color:#4a3f8a;"></p>
+      <p id="previewQRUrl" style="font-size:0.8rem; color:#888; word-break:break-all; text-align:center;"></p>
+      <div style="display:flex; gap:8px;">
+        <button class="btn btn-secondary btn-small" id="downloadBtn">⬇️ Baixar PNG</button>
+        <button class="btn btn-secondary btn-small" id="copyBtn">📋 Copiar URL</button>
+      </div>
+    </div>
+
+    <h2>📚 Meus Links Dinâmicos</h2>
+    <div class="search-box">
+      <input type="text" id="search" placeholder="🔍 Buscar...">
+    </div>
+    <div class="list" id="list"></div>
+
+    <div class="toolbar">
+      <button class="btn btn-secondary btn-small" id="clearBtn" style="margin-left:auto;">🗑️ Limpar tudo</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+  // ============================================================
+  // ⚠️ COLOQUE AQUI O CLIENT ID DO SEU OAUTH APP
+  // Crie em: https://github.com/settings/developers
+  // Tipo: OAuth App (não precisa de callback URL válida no device flow)
+  // ============================================================
+  const CLIENT_ID = 'Ov23liN6J1vFLnpAJsvd';
+
+  const CFG_KEY = 'qr_dynamic_cfg_v2';
+  const CACHE_KEY = 'qr_dynamic_cache_v2';
+  const TOKEN_KEY = 'qr_dynamic_token';
+  const GIST_FILE = 'links.json';
+
+  let cfg = { gist: '', base: '' };
+  let items = [];
+  let currentQR = null;
+  let accessToken = null;
+  let currentUser = null;
+
+  // ===== Toast =====
+  function toast(msg) {
+    const t = document.getElementById('toast');
+    t.textContent = msg;
+    t.classList.add('show');
+    clearTimeout(t._timer);
+    t._timer = setTimeout(() => t.classList.remove('show'), 2500);
+  }
+
+  // ============================================================
+  // DEVICE FLOW
+  // ============================================================
+  async function startLogin() {
+    try {
+      const r = await fetch('https://github.com/login/device/code', {
+        method: 'POST',
+        headers: { 'Accept': 'application/json' },
+        body: new URLSearchParams({
+          client_id: CLIENT_ID,
+          scope: 'gist read:user'
+        })
+      });
+      const data = await r.json();
+      if (data.error) throw new Error(data.error_description || data.error);
+
+      document.getElementById('deviceCode').textContent = data.user_code;
+      document.getElementById('deviceFlow').classList.remove('hidden');
+      document.getElementById('loginBtn').classList.add('hidden');
+
+      pollToken(data.device_code, data.interval || 5);
+    } catch (e) {
+      toast('❌ ' + e.message);
+    }
+  }
+
+  async function pollToken(deviceCode, interval) {
+    const timer = setInterval(async () => {
+      try {
+        const r = await fetch('https://github.com/login/oauth/access_token', {
+          method: 'POST',
+          headers: { 'Accept': 'application/json' },
+          body: new URLSearchParams({
+            client_id: CLIENT_ID,
+            device_code: deviceCode,
+            grant_type: 'urn:ietf:params:oauth:grant-type:device_code'
+          })
+        });
+        const data = await r.json();
+
+        if (data.access_token) {
+          clearInterval(timer);
+          onLoginSuccess(data.access_token);
+        } else if (data.error === 'authorization_pending') {
+          // continua aguardando
+        } else if (data.error === 'slow_down') {
+          clearInterval(timer);
+          pollToken(deviceCode, interval + 5);
+        } else if (data.error) {
+          clearInterval(timer);
+          toast('❌ ' + (data.error_description || data.error));
+          resetLoginUI();
+        }
+      } catch (e) {
+        clearInterval(timer);
+        toast('❌ Erro de rede');
+        resetLoginUI();
+      }
+    }, interval * 1000);
+  }
+
+  function resetLoginUI() {
+    document.getElementById('deviceFlow').classList.add('hidden');
+    document.getElementById('loginBtn').classList.remove('hidden');
+  }
+
+  async function onLoginSuccess(token) {
+    accessToken = token;
+    sessionStorage.setItem(TOKEN_KEY, token);
+
+    // Busca dados do usuário
+    try {
+      const r = await fetch('https://api.github.com/user', {
+        headers: { 'Authorization': `token ${token}` }
+      });
+      currentUser = await r.json();
+    } catch {}
+
+    showLoggedIn();
+    toast('✅ Bem-vindo, ' + (currentUser?.login || 'usuário') + '!');
+  }
+
+  function showLoggedIn() {
+    document.getElementById('loginArea').classList.add('hidden');
+    document.getElementById('app').classList.remove('hidden');
+    document.getElementById('userBar').classList.remove('hidden');
+    if (currentUser) {
+      document.getElementById('userAvatar').src = currentUser.avatar_url || '';
+      document.getElementById('userName').textContent = currentUser.name || currentUser.login;
+    }
+    loadCfg();
+    loadCache();
+    renderList();
+  }
+
+  function logout() {
+    accessToken = null;
+    currentUser = null;
+    sessionStorage.removeItem(TOKEN_KEY);
+    document.getElementById('loginArea').classList.remove('hidden');
+    document.getElementById('app').classList.add('hidden');
+    document.getElementById('userBar').classList.add('hidden');
+    document.getElementById('preview').classList.add('hidden');
+    resetLoginUI();
+    toast('👋 Sessão encerrada');
+  }
+
+  document.getElementById('loginBtn').addEventListener('click', startLogin);
+  document.getElementById('logoutBtn').addEventListener('click', logout);
+  document.getElementById('copyCodeBtn').addEventListener('click', () => {
+    const code = document.getElementById('deviceCode').textContent;
+    navigator.clipboard.writeText(code).then(() => toast('📋 Código copiado!'));
+  });
+
+  // ============================================================
+  // CONFIG
+  // ============================================================
+  function loadCfg() {
+    try { cfg = JSON.parse(localStorage.getItem(CFG_KEY)) || cfg; } catch {}
+    document.getElementById('cfgGist').value = cfg.gist;
+    document.getElementById('cfgBase').value = cfg.base;
+  }
+  document.getElementById('saveCfgBtn').addEventListener('click', () => {
+    cfg.gist = document.getElementById('cfgGist').value.trim();
+    cfg.base = document.getElementById('cfgBase').value.trim();
+    localStorage.setItem(CFG_KEY, JSON.stringify(cfg));
+    toast('✅ Configuração salva');
+  });
+
+  // ============================================================
+  // CACHE LOCAL
+  // ============================================================
+  function loadCache() {
+    try { items = JSON.parse(localStorage.getItem(CACHE_KEY)) || []; } catch { items = []; }
+  }
+  function saveCache() {
+    localStorage.setItem(CACHE_KEY, JSON.stringify(items));
+  }
+
+  // ============================================================
+  // GIST API (com token do login)
+  // ============================================================
+  async function fetchGist() {
+    if (!cfg.gist) throw new Error('Gist ID não configurado');
+    const r = await fetch(`https://api.github.com/gists/${cfg.gist}`);
+    if (!r.ok) throw new Error('Erro ao ler Gist');
+    const g = await r.json();
+    const content = g.files[GIST_FILE]?.content || '{}';
+    return JSON.parse(content);
+  }
+
+  async function updateGist(data) {
+    if (!accessToken) throw new Error('Não autenticado');
+    if (!cfg.gist) throw new Error('Gist ID não configurado');
+    const r = await fetch(`https://api.github.com/gists/${cfg.gist}`, {
+      method: 'PATCH',
+      headers: {
+        'Authorization': `token ${accessToken}`,
+        'Accept': 'application/vnd.github+json',
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        files: { [GIST_FILE]: { content: JSON.stringify(data, null, 2) } }
+      })
+    });
+    if (!r.ok) {
+      const err = await r.json().catch(() => ({}));
+      throw new Error(err.message || 'Erro ao salvar no Gist');
+    }
+  }
+
+  document.getElementById('syncBtn').addEventListener('click', async () => {
+    try {
+      toast('🔄 Sincronizando...');
+      const data = await fetchGist();
+      items = Object.entries(data).map(([id, v]) => ({ id, ...v }));
+      saveCache();
+      renderList();
+      toast(`✅ ${items.length} link(s) carregado(s)`);
+    } catch (e) {
+      toast('❌ ' + e.message);
+    }
+  });
+
+  // ============================================================
+  // QR CODE
+  // ============================================================
+  function generateQR(url, label) {
+    const container = document.getElementById('qrcode');
+    container.innerHTML = '';
+    if (currentQR) { currentQR.clear(); currentQR = null; }
+    currentQR = new QRCode(container, {
+      text: url, width: 220, height: 220,
+      colorDark: '#4a3f8a', colorLight: '#ffffff',
+      correctLevel: QRCode.CorrectLevel.H
+    });
+    document.getElementById('previewLabel').textContent = label || '';
+    document.getElementById('previewQRUrl').textContent = url;
+    document.getElementById('preview').classList.remove('hidden');
+  }
+
+  // ============================================================
+  // SALVAR
+  // ============================================================
+  document.getElementById('saveBtn').addEventListener('click', async () => {
+    const title = document.getElementById('title').value.trim();
+    const url = document.getElementById('url').value.trim();
+
+    if (!title || !url) return toast('⚠️ Preencha título e URL');
+    if (!cfg.gist || !cfg.base) return toast('⚠️ Configure o Gist primeiro');
+    if (!accessToken) return toast('⚠️ Faça login');
+
+    let finalUrl = url;
+    if (!/^https?:\/\//i.test(finalUrl)) finalUrl = 'https://' + finalUrl;
+
+    const id = Math.random().toString(36).slice(2, 10);
+    const newItems = [...items, { id, title, url: finalUrl }];
+    const data = {};
+    newItems.forEach(it => { data[it.id] = { title: it.title, url: it.url }; });
+
+    try {
+      document.getElementById('saveBtn').disabled = true;
+      await updateGist(data);
+      items = newItems;
+      saveCache();
+      renderList();
+      document.getElementById('title').value = '';
+      document.getElementById('url').value = '';
+      const qrUrl = `${cfg.base}?id=${id}`;
+      generateQR(qrUrl, title);
+      toast('✅ Salvo no Gist!');
+    } catch (e) {
+      toast('❌ ' + e.message);
+    } finally {
+      document.getElementById('saveBtn').disabled = false;
+    }
+  });
+
+  // ============================================================
+  // AÇÕES
+  // ============================================================
+  window.editUrl = async function(id) {
+    const it = items.find(i => i.id === id);
+    if (!it) return;
+    const novo = prompt(`Novo destino para "${it.title}":\n(QR Code continua o mesmo!)`, it.url);
+    if (!novo || novo === it.url) return;
+
+    let finalUrl = novo.trim();
+    if (!/^https?:\/\//i.test(finalUrl)) finalUrl = 'https://' + finalUrl;
+
+    const newItems = items.map(i => i.id === id ? { ...i, url: finalUrl } : i);
+    const data = {};
+    newItems.forEach(x => { data[x.id] = { title: x.title, url: x.url }; });
+
+    try {
+      await updateGist(data);
+      items = newItems;
+      saveCache();
+      renderList();
+      toast('✅ Destino atualizado! QR continua válido.');
+    } catch (e) {
+      toast('❌ ' + e.message);
+    }
+  };
+
+  window.showQR = function(id) {
+    const it = items.find(i => i.id === id);
+    if (!it) return;
+    const qrUrl = `${cfg.base}?id=${id}`;
+    generateQR(qrUrl, it.title);
+    document.getElementById('preview').scrollIntoView({ behavior: 'smooth', block: 'center' });
+  };
+
+  window.removeItem = async function(id) {
+    if (!confirm('Remover este link? O QR vai parar de funcionar.')) return;
+    const newItems = items.filter(i => i.id !== id);
+    const data = {};
+    newItems.forEach(x => { data[x.id] = { title: x.title, url: x.url }; });
+    try {
+      await updateGist(data);
+      items = newItems;
+      saveCache();
+      renderList();
+      toast('🗑️ Removido');
+    } catch (e) {
+      toast('❌ ' + e.message);
+    }
+  };
+
+  document.getElementById('clearBtn').addEventListener('click', async () => {
+    if (items.length === 0) return toast('Nada para limpar');
+    if (!confirm(`Apagar TODOS os ${items.length} links? Os QRs vão parar de funcionar.`)) return;
+    try {
+      await updateGist({});
+      items = [];
+      saveCache();
+      renderList();
+      document.getElementById('preview').classList.add('hidden');
+      toast('🧹 Tudo limpo');
+    } catch (e) {
+      toast('❌ ' + e.message);
+    }
+  });
+
+  // ============================================================
+  // RENDER
+  // ============================================================
+  function renderList(filter = '') {
+    const list = document.getElementById('list');
+    const q = filter.toLowerCase().trim();
+    const filtered = items.filter(it =>
+      !q || it.title.toLowerCase().includes(q) ||
+      it.url.toLowerCase().includes(q) || it.id.includes(q)
+    );
+
+    if (filtered.length === 0) {
+      list.innerHTML = `<div class="empty">${items.length === 0 ? 'Nenhum link. Adicione o primeiro acima.' : 'Nada encontrado.'}</div>`;
+      return;
+    }
+
+    list.innerHTML = filtered.map(it => `
+      <div class="card">
+        <div class="card-info">
+          <div class="card-title">${esc(it.title)}</div>
+          <div class="card-url">${esc(it.url)}</div>
+          <span class="card-id">id: ${it.id}</span>
+        </div>
+        <div class="card-actions">
+          <button class="btn btn-secondary btn-small" onclick="editUrl('${it.id}')" title="Trocar destino">✏️</button>
+          <button class="btn btn-secondary btn-small" onclick="showQR('${it.id}')" title="Ver QR">👁️</button>
+          <button class="btn btn-danger" onclick="removeItem('${it.id}')">✕</button>
+        </div>
+      </div>
+    `).join('');
+  }
+
+  function esc(s) {
+    return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+  }
+
+  document.getElementById('search').addEventListener('input', e => renderList(e.target.value));
+
+  document.getElementById('downloadBtn').addEventListener('click', () => {
+    const canvas = document.querySelector('#qrcode canvas');
+    if (!canvas) return toast('⚠️ Gere um QR primeiro');
+    const a = document.createElement('a');
+    a.download = 'qrcode.png';
+    a.href = canvas.toDataURL('image/png');
+    a.click();
+  });
+
+  document.getElementById('copyBtn').addEventListener('click', () => {
+    const url = document.getElementById('previewQRUrl').textContent;
+    navigator.clipboard.writeText(url).then(() => toast('📋 Copiado!'));
+  });
+
+  // ============================================================
+  // INIT — se já tem token na sessão, loga direto
+  // ============================================================
+  (async function init() {
+    const saved = sessionStorage.getItem(TOKEN_KEY);
+    if (saved) {
+      accessToken = saved;
+      try {
+        const r = await fetch('https://api.github.com/user', {
+          headers: { 'Authorization': `token ${saved}` }
+        });
+        if (r.ok) {
+          currentUser = await r.json();
+          showLoggedIn();
+          return;
+        }
+      } catch {}
+      // Token inválido
+      sessionStorage.removeItem(TOKEN_KEY);
+    }
+  })();
+</script>
+</body>
+</html>
