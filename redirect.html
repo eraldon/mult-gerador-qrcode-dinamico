@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<title>Redirecionando...</title>
+<style>
+  body {
+    font-family: system-ui, sans-serif;
+    display: flex; align-items: center; justify-content: center;
+    min-height: 100vh; margin: 0;
+    background: linear-gradient(135deg, #667eea, #764ba2);
+    color: #fff; text-align: center; padding: 20px;
+  }
+  .box { background: rgba(255,255,255,0.1); padding: 40px; border-radius: 16px; backdrop-filter: blur(10px); }
+  a { color: #fff; }
+</style>
+</head>
+<body>
+<div class="box">
+  <h1 id="msg">🔍 Buscando link...</h1>
+  <p id="sub"></p>
+</div>
+
+<script>
+  // ⚠️ COLOQUE AQUI O ID DO SEU GIST PÚBLICO
+  const GIST_ID = 'SEU_GIST_ID_AQUI';
+  const GIST_FILE = 'links.json';
+
+  const params = new URLSearchParams(location.search);
+  const id = params.get('id');
+  const msg = document.getElementById('msg');
+  const sub = document.getElementById('sub');
+
+  if (!id) {
+    msg.textContent = '❌ Nenhum ID informado';
+    sub.textContent = 'Use ?id=xxxx na URL';
+  } else {
+    fetch(`https://api.github.com/gists/${GIST_ID}`)
+      .then(r => r.json())
+      .then(gist => {
+        const content = gist.files[GIST_FILE]?.content;
+        if (!content) throw new Error('Gist vazio');
+        const data = JSON.parse(content);
+        const item = data[id];
+        if (!item || !item.url) throw new Error('ID não encontrado');
+        msg.textContent = '✅ Redirecionando...';
+        sub.textContent = item.title || item.url;
+        location.replace(item.url);
+      })
+      .catch(err => {
+        msg.textContent = '❌ Link não encontrado';
+        sub.textContent = err.message;
+      });
+  }
+</script>
+</body>
+</html>
